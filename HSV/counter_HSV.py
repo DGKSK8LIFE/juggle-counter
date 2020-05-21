@@ -8,6 +8,8 @@ capture = cv2.VideoCapture("../Resources/1500.mp4")
 capture.set(3, 640)
 capture.set(4, 480)
 
+prev_HSV = [int(line) for line in open("prev_HSV.txt", "r")]
+
 def empty(a):
     pass
 
@@ -42,11 +44,10 @@ def stackImages(scale, imgArray):
         ver = hor
     return ver
 
+print("Press 'p' to pause the video to pick out the ball (please try to do this as soon as you clearly see the ball!)")
 
 while True:
     ok, first_frame = capture.read()
-
-    print("Press 'p' to pause the video to pick out the ball (please try to do this as soon as you clearly see the ball!)")
 
     if ok == False:
         break
@@ -56,21 +57,23 @@ while True:
     if cv2.waitKey(50) & 0xFF == ord('p'):
         break
 
+height = first_frame.shape[0]
+
 cv2.destroyAllWindows()
 
-print("Expirement trackbars to get the ball white and everything black. Press 'n' for next step.")
+print("Expirement trackbars to get the ball white and everything black. Previously used values are automatically loaded. Press 'n' for next step.")
 
 cv2.namedWindow("Trackbars")
 cv2.resizeWindow("Trackbars", 640, 240)
 
-cv2.createTrackbar("Hue min", "Trackbars", 0, 179, empty)
-cv2.createTrackbar("Hue max", "Trackbars", 179, 179, empty)
+cv2.createTrackbar("Hue min", "Trackbars", prev_HSV[0], 179, empty) # default start value: 0
+cv2.createTrackbar("Hue max", "Trackbars", prev_HSV[1], 179, empty) # default start value: 179
 
-cv2.createTrackbar("Saturation min", "Trackbars", 0, 255, empty)
-cv2.createTrackbar("Saturation max", "Trackbars", 255, 255, empty)
+cv2.createTrackbar("Saturation min", "Trackbars", prev_HSV[2], 255, empty) # default start value: 0
+cv2.createTrackbar("Saturation max", "Trackbars", prev_HSV[3], 255, empty) # default start value: 255
 
-cv2.createTrackbar("Value min", "Trackbars", 0, 255, empty)
-cv2.createTrackbar("Value max", "Trackbars", 255, 255, empty)
+cv2.createTrackbar("Value min", "Trackbars", prev_HSV[4], 255, empty) # default start value: 0
+cv2.createTrackbar("Value max", "Trackbars", prev_HSV[5], 255, empty) # default start value: 255
 
 while True:
     blurred_img = cv2.GaussianBlur(first_frame, (11, 11), 0)
@@ -97,8 +100,19 @@ while True:
 
     if cv2.waitKey(1) & 0xFF == ord('n'):
         break
-
+    
 cv2.destroyAllWindows()
+
+write_HSV =  open("prev_HSV.txt", "w")
+
+write_HSV.write(str(hue_min) + '\n')
+write_HSV.write(str(hue_max) + '\n')
+write_HSV.write(str(sat_min) + '\n')
+write_HSV.write(str(sat_max) + '\n')
+write_HSV.write(str(val_min) + '\n')
+write_HSV.write(str(val_max))
+
+write_HSV.close()
 
 circle_y = []
 
@@ -113,7 +127,7 @@ while True:
     blurred_frame = cv2.GaussianBlur(frame, (11, 11), 0)
     hsv_frame = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2HSV)
     mask_frame = cv2.inRange(hsv_frame, lower, upper)
-    mask_frame = mask = cv2.erode(mask_frame, None, iterations=2)
+    mask_frame = cv2.erode(mask_frame, None, iterations=2)
     mask_frame = cv2.dilate(mask_frame, None, iterations=2)
 
     contours, hierarchy = cv2.findContours(mask_frame,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
@@ -132,7 +146,8 @@ while True:
         coordinates = cv2.moments(contours[largest])
         target_x = int(coordinates['m10']/coordinates['m00'])
         target_y = int(coordinates['m01']/coordinates['m00'])
-        circle_y.append(target_y)
+
+        circle_y.append(height - target_y)
         # Pick a suitable diameter for our target (grows with the contour)
         diam = int(np.sqrt(area)/4)
         # draw on a target
@@ -152,7 +167,7 @@ cv2.destroyAllWindows()
 
 sample = np.array(circle_y)
 
-peaks, _ = find_peaks(sample) # Returns the indexes of the peaks
+peaks, _ = find_peaks(sample, distance=1) # Returns the indexes of the peaks
 
 print('Peaks:', peaks)
 print('Number of juggles:', len(peaks))
