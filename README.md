@@ -5,9 +5,10 @@ Then I tried using color HSV and it gave me better results.
 
 ![Tracking the ball](Resources/juggling.png)
 
-First I graphed the y coordinates of the center of the detected ball with the x-axis being the number of frames.
+The y coordinates are the center of the detected ball with the x-axis being the number of frames.
 ![Graph](Resources/juggle_graph.png)
 Each marked X is a peak, when the ball is up and just about to fall down. The number of preaks should be the number of juggles done.
 
+Uses OpenCV (cv2) for the ball detection, SciPy to find the peaks, and Matplotlib to graph.
 Run the program by doing `python3 HSV/counter_HSV.py path/to/juggle_video.mp4`
 Works with other video files as well, like .MOV.
