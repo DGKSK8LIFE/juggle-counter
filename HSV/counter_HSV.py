@@ -2,8 +2,15 @@ import cv2
 import numpy as np 
 from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
+import argparse
 
-capture = cv2.VideoCapture("../Resources/1500.mp4")
+parser = argparse.ArgumentParser(description='Pass the video as an argument')
+parser.add_argument("video", help="video file", type=str)
+args = parser.parse_args()
+
+# IMG.MOV 0 179 0 255 251 255
+# 1500.mp4 
+capture = cv2.VideoCapture(args.video)
 
 capture.set(3, 640)
 capture.set(4, 480)
@@ -54,7 +61,7 @@ while True:
 
     cv2.imshow("preview", first_frame)
 
-    if cv2.waitKey(50) & 0xFF == ord('p'):
+    if cv2.waitKey(25) & 0xFF == ord('p'):
         break
 
 height = first_frame.shape[0]
@@ -115,8 +122,7 @@ write_HSV.write(str(val_max))
 write_HSV.close()
 
 circle_y = []
-
-num_frames = 0
+areas = []
 
 while True:
     success, frame = capture.read()
@@ -148,14 +154,13 @@ while True:
         target_y = int(coordinates['m01']/coordinates['m00'])
 
         circle_y.append(height - target_y)
+        areas.append(area)
         # Pick a suitable diameter for our target (grows with the contour)
         diam = int(np.sqrt(area)/4)
         # draw on a target
-        cv2.circle(frame,(target_x,target_y),diam,(0,255,0),1)
-        cv2.line(frame,(target_x-2*diam,target_y),(target_x+2*diam,target_y),(0,255,0),1)
-        cv2.line(frame,(target_x,target_y-2*diam),(target_x,target_y+2*diam),(0,255,0),1)
-
-        num_frames += 1
+        cv2.circle(frame,(target_x,target_y),diam,(255, 0 ,0),1)
+        cv2.line(frame,(target_x-2*diam,target_y),(target_x+2*diam,target_y),(255, 0, 0),1)
+        cv2.line(frame,(target_x,target_y-2*diam),(target_x,target_y+2*diam),(255, 0,0),1)
 
         cv2.imshow('View', frame)
 
@@ -167,12 +172,13 @@ cv2.destroyAllWindows()
 
 sample = np.array(circle_y)
 
-peaks, _ = find_peaks(sample, distance=1) # Returns the indexes of the peaks
+# This threshold value depends on how well the ball is detected
+# However it doesn't work well. Sometimes it doesnt detect the perfect center every time causing mini fluctuations. 
+# Sometimes the threshold is too big or too small
+peaks, _ = find_peaks(sample, threshold=np.mean(areas) / 1000, distance=1) # Returns the indexes of the peaks
 
-print('Peaks:', peaks)
 print('Number of juggles:', len(peaks))
-print('Number of circles detected:', len(sample))
-print('Num of frames:', num_frames)
+print('Avg ball area', np.mean(areas))
 
 plt.plot(sample)
 plt.xlabel("frames")
