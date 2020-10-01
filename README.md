@@ -1,4 +1,5 @@
 # juggle-counter
+
 My brother is getting very good at juggling a soccer ball and he records himself to count how many he has done later. This program will count how many juggles he does for him.
 I tried at first tracking the ball only based on shape, but the program would detect multiple erraneous circles and mess up the juggle count.
 Then I tried using color HSV and it gave me better results.
